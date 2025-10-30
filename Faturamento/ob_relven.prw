@@ -13,31 +13,42 @@ return
 Static Function RunMessage(oSay)
 
 	Local oExcel := FWMsExcel():New()
-	//Local cArquivo := GetTempPath()+'RTCVTEA.xml'  
-	local cArquivo := '\1arqtrab\RTCVTEA.xml'  
-
-	Private cPath   := AllTrim(GetTempPath())
+	local cArq := 'RTCVTEA.xml'
+	local cPath   := AllTrim(GetTempPath())
+	Local cArquivo := cPath + cArq
+	//local cArquivo := '\1arqtrab\RTCVTEA.xml'
 
 	QryCOMPANT(oExcel)
 	QryVTOTA(oExcel)
 	QryCOMPATU(oExcel)
 
+
+	msgalert("Caminho do relatorio: " + cPath )
 	//Criando o XML
 	oExcel:Activate()
 	oExcel:GetXMLFile(cArquivo)
 
 	//Abrindo o excel e abrindo o arquivo xml
 
-	oExcel := MsExcel():New()
-	oExcel:WorkBooks:Open(cArquivo)
-	oExcel:SetVisible(.T.)
-	oExcel:Destroy()
-
-	//C:\Program Files\LibreOffice\program\scalc.exe
-
+	If ApOleClient("msexcel")
+		oExcel := MsExcel():New()
+		oExcel:WorkBooks:Open(cArquivo)
+		oExcel:SetVisible(.T.)
+		oExcel:Destroy()
+	ElseIf ExistDir("C:\Program Files (x86)\LibreOffice 5")
+		WaitRun('C:\Program Files (x86)\LibreOffice 5\program\scalc.exe "'+cArquivo+'"', 1)
+	ElseIf ExistDir("C:\Program Files (x86)\LibreOffice")
+		WaitRun('C:\Program Files (x86)\LibreOffice\program\scalc.exe "'+cArquivo+'"', 1)
+	ElseIf ExistDir("C:\Program Files\LibreOffice\program")		
+		WaitRun('C:\Program Files\LibreOffice\program\scalc.exe "'+cArquivo+'"', 1)
+	Else
+		//Senão, abre o XML pelo programa padrão
+		ShellExecute("open", cArq, "", cPath, 1)
+	EndIf
 
 
 Return
+
 
 Static Function QryCOMPANT(oExcel)
 
@@ -232,7 +243,6 @@ Static Function QryCOMPATU(oExcel)
 	cQuery += "    E1.E1_TIPO AS TipoNF,"+STR_PULA
 	cQuery += "    CAST(SUM(ISNULL(E1.E1_VALOR, 0)) AS NUMERIC(18,2)) AS VTotalTitulos,"+STR_PULA
 	cQuery += "    CAST(SUM(ISNULL(E1.E1_SALDO, 0)) AS NUMERIC(18,2)) AS VTotalEmAberto"+STR_PULA
-	cQuery += "    
 	cQuery += "FROM "+STR_PULA
 	cQuery += "    "+RetSQLName('SE1')+" E1"+STR_PULA
 	cQuery += "    INNER JOIN "+RetSQLName('SA1')+" A1 "+STR_PULA
@@ -290,7 +300,7 @@ Static Function QryCOMPATU(oExcel)
 		AADD(_aDados, alltrim(COMPATU->TipoNF))
 		AADD(_aDados, COMPATU->VTotalTitulos)
 		AADD(_aDados, COMPATU->VTotalEmAberto)
-	
+
 		//Pulando Registro
 		oExcel:AddRow(cPlano,cTitulo,_aDados)
 		DbSelectArea('COMPATU')
